@@ -1,5 +1,6 @@
 import unittest
 from os.path import join, dirname
+from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch, MagicMock
 
@@ -51,13 +52,15 @@ class TestIDu(unittest.TestCase):
         m_run_du.assert_called()
 
     @patch('idu.run_du')
-    @patch('idu.input', return_value='u')
-    def test_u_goes_up_to_parent(self, m_input, m_run_du):
+    @patch('idu.input', return_value='..')
+    def test_dotdot_goes_up_to_parent(self, m_input, m_run_du):
         self.idu.prompt()
         m_input.assert_called()
-        m_run_du.assert_called_with(dirname(self.td.name))
-        self.assertEqual(dirname(self.td.name), self.idu.directory)
-        self.assertEqual(self.td.name, self.idu.base_directory)
+        m_run_du.assert_called_with(Path(self.td.name).resolve().parent)
+        # and the directory has changed
+        self.assertEqual(Path(self.td.name).resolve().parent, self.idu.directory)
+        # but the base directory has not
+        self.assertEqual(Path(self.td.name).resolve(), self.idu.base_directory)
 
     @patch('idu.subprocess.run', side_effect=KeyboardInterrupt)
     def test_interrupted_update_doesnt_change_dir(self, m_subprocess_run):
