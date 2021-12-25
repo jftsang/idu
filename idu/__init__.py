@@ -12,7 +12,7 @@ integer - traverse into that directory
 p - print current state
 P - refresh
 u or .. - go up to parent directory
-c - make current directory the base
+c - show directories relative to this one
 g /foo - go to a new directory
 r - switch between relative or absolute paths 
 s - switch between sorting by name or by size
@@ -30,17 +30,6 @@ class DirectoryDu:
         self.path = Path(path).resolve()
         self.size = size
 
-    def str(self, base_directory: OUPs = None):
-        if base_directory:
-            pathstr = relpath(self.path, Path(base_directory).resolve())
-        else:
-            pathstr = self.path
-
-        return f'{self.size:>10d}\t{pathstr}'
-
-    def __str__(self):
-        return self.str()
-
 
 class IDu:
     """Interactive disk usage analyser."""
@@ -56,7 +45,6 @@ class IDu:
         self,
         directory: OUPs = None,
         cached: bool = True,
-        allow_rte: bool = True,
     ):
         if directory is None:
             directory = self.directory
@@ -64,15 +52,12 @@ class IDu:
         directory = Path(directory).resolve()
         try:
             if not cached or (directory not in [r.path for r in self.results]):
-                self.results = run_du(directory)
+                self.results, stderr = run_du(directory)
+                if stderr:
+                    warnings.warn(stderr)
                 self.resort()
 
             self.directory = directory
-
-        except RuntimeError as exc:
-            if not allow_rte:
-                raise
-            warnings.warn(exc.__str__())
 
         except KeyboardInterrupt:  # catch ctrl-C
             pass
@@ -125,7 +110,7 @@ class IDu:
                 print('?')
 
     def loop(self):
-        self.update(allow_rte=False)
+        self.update()
         print(self)
         while True:
             try:
@@ -134,30 +119,38 @@ class IDu:
                 break
 
     def __str__(self):
-        def fmt(n, r):
-            if self.rel:
-                return f'{n}\t{r.str(self.base_directory)}'
-            else:
-                return f'{n}\t{r.str()}'
+        # Show only the current directory and its immediate children
+        here = self.here()
+        children_size = sum(r.size for r in here if r.path.parent == self.directory)
+        my_size = sum(r.size for r in here if r.path == self.directory)
+        output = str(self.base_directory.resolve()) + '\n'
 
-        # Show only immediate children
-        output = str(self.base_directory.resolve()) + '\n' + '\n'.join(
-            [fmt(n, r) for n, r in enumerate(self.here())]
-        )
+        def fmt(n, r):
+            percentage = r.size / my_size * 100
+            if self.rel:
+                return f'{n:<9d}{r.size:>10d}  ({percentage:>6.2f}%)\t{relpath(r.path, self.base_directory)}'
+            else:
+                return f'{n:<9d}{r.size:>10d}  ({percentage:>6.2f}%)\t{r.path}'
+
+        output += '\n'.join([fmt(n, r) for n, r in enumerate(here)])
+        output += '\n'
+        output += f'of which {my_size - children_size:>10d}\tis from files in {self.directory}'
+
 
         return output
 
     __repr__ = __str__
 
 
-def run_du(directory: Union[str, Path]) -> List[DirectoryDu]:
+def run_du(directory: Union[str, Path]) -> (List[DirectoryDu], str):
     directory = str(directory)
     du_res = subprocess.run(['du', directory], capture_output=True)
-    if du_res.stderr:
-        raise RuntimeError(du_res.stderr.decode())
     out = du_res.stdout.decode().split('\n')[:-1]
     out_2 = [o.split('\t') for o in out]
-    return [DirectoryDu(path, int(size)) for size, path in out_2]
+    return (
+        [DirectoryDu(path, int(size)) for size, path in out_2],
+        du_res.stderr.decode()
+    )
 
 
 def main():
