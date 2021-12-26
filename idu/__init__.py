@@ -51,7 +51,8 @@ class IDu:
 
         directory = Path(directory).resolve()
         try:
-            if not cached or (directory not in [r.path for r in self.results]):
+            cached_paths = [r.path for r in self.results]
+            if not (cached and directory in cached_paths):
                 self.results, stderr = run_du(directory)
                 if stderr:
                     warnings.warn(stderr)
