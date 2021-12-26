@@ -46,12 +46,12 @@ class TestIDu(unittest.TestCase):
         m_update.assert_called()
         m_idu_str.assert_called()
 
-    @patch('idu.run_du')
+    @patch('idu.run_du', return_value=([], ''))
     def test_update_runs_du(self, m_run_du):
         self.idu.update()
         m_run_du.assert_called()
 
-    @patch('idu.run_du')
+    @patch('idu.run_du', return_value=([], ''))
     @patch('idu.input', return_value='..')
     def test_dotdot_goes_up_to_parent(self, m_input, m_run_du):
         self.idu.prompt()
