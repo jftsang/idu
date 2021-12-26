@@ -10,7 +10,7 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name='idu',
-    version='0.0.0',
+    version='0.1.0',
     packages=['idu'],
     url='https://github.com/jftsang/idu',
     license='MIT License',
