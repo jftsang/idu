@@ -2,8 +2,7 @@ import argparse
 import subprocess
 import warnings
 from pathlib import Path
-from os import getcwd
-from os.path import relpath, abspath, dirname
+from os.path import relpath
 from typing import List, Optional, Union
 
 HELP = """
@@ -21,6 +20,7 @@ q - quit
 
 OUPs = Optional[Union[Path, str]]
 
+
 class DirectoryDu:
     """Disk usage information for a single directory. All paths are
     resolved as absolute paths using Path.resolve().
@@ -35,8 +35,15 @@ class IDu:
     """Interactive disk usage analyser."""
 
     def __init__(self, directory: OUPs = None, base_directory: OUPs = None):
-        self.directory = Path(directory).resolve() if directory else Path.getcwd()
-        self.base_directory = Path(base_directory).resolve() if base_directory else Path.cwd()
+        if directory is not None:
+            self.directory = Path(directory).resolve()
+        else:
+            self.directory = Path.cwd()
+
+        if base_directory is not None:
+            self.base_directory = Path(base_directory).resolve()
+        else:
+            self.base_directory = Path.cwd()
         self.results = []
         self.sort_by_size = False
         self.rel = True
@@ -122,7 +129,9 @@ class IDu:
     def __str__(self):
         # Show only the current directory and its immediate children
         here = self.here()
-        children_size = sum(r.size for r in here if r.path.parent == self.directory)
+        children_size = sum(
+            r.size for r in here if r.path.parent == self.directory
+        )
         my_size = sum(r.size for r in here if r.path == self.directory)
         output = str(self.base_directory.resolve()) + '\n'
 
@@ -136,7 +145,6 @@ class IDu:
         output += '\n'.join([fmt(n, r) for n, r in enumerate(here)])
         output += '\n'
         output += f'of which {my_size - children_size:>10d}\tis from files in {self.directory}'
-
 
         return output
 
@@ -161,6 +169,7 @@ def main():
 
     idu = IDu(directory=Path(args.dir), base_directory=Path(args.dir))
     idu.loop()
+
 
 if __name__ == '__main__':
     main()

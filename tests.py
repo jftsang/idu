@@ -1,8 +1,8 @@
 import unittest
-from os.path import join, dirname
+from os.path import join
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from idu import IDu, HELP
 
@@ -58,7 +58,9 @@ class TestIDu(unittest.TestCase):
         m_input.assert_called()
         m_run_du.assert_called_with(Path(self.td.name).resolve().parent)
         # and the directory has changed
-        self.assertEqual(Path(self.td.name).resolve().parent, self.idu.directory)
+        self.assertEqual(
+            Path(self.td.name).resolve().parent, self.idu.directory
+        )
         # but the base directory has not
         self.assertEqual(Path(self.td.name).resolve(), self.idu.base_directory)
 
@@ -74,6 +76,7 @@ class TestIDu(unittest.TestCase):
         idu = IDu(directory=join(self.td.name, 'foo'))
         with self.assertRaises(RuntimeError):
             idu.loop()
+
 
 if __name__ == '__main__':
     unittest.main()
