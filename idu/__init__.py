@@ -145,7 +145,7 @@ class IDu:
 
 def run_du(directory: Union[str, Path]) -> (List[DirectoryDu], str):
     directory = str(directory)
-    du_res = subprocess.run(['du', directory], capture_output=True)
+    du_res = subprocess.run(['du', '-k', directory], capture_output=True)
     out = du_res.stdout.decode().split('\n')[:-1]
     out_2 = [o.split('\t') for o in out]
     return (
