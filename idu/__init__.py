@@ -30,6 +30,20 @@ class DirectoryDu:
         self.path = Path(path).resolve()
         self.size = size
 
+    def __eq__(self, other):
+        return (
+            self.path.resolve() == other.path.resolve()
+            and self.size == other.size
+        )
+
+    def __str__(self):
+        return f'{self.path} {self.size}'
+
+    def __hash__(self):
+        return hash((self.path, self.size))
+
+    __repr__ = __str__
+
 
 class IDu:
     """Interactive disk usage analyser."""
@@ -153,12 +167,12 @@ class IDu:
 
 def run_du(directory: Union[str, Path]) -> (List[DirectoryDu], str):
     directory = str(directory)
-    du_res = subprocess.run(['du', '-k', directory], capture_output=True)
-    out = du_res.stdout.decode().split('\n')[:-1]
+    du_res = subprocess.run(['du', '-k', directory], capture_output=True, text=True)
+    out = du_res.stdout.split('\n')[:-1]
     out_2 = [o.split('\t') for o in out]
     return (
         [DirectoryDu(path, int(size)) for size, path in out_2],
-        du_res.stderr.decode()
+        du_res.stderr
     )
 
 

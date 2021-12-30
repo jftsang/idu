@@ -4,7 +4,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
-from idu import IDu, HELP
+from idu import IDu, HELP, run_du, DirectoryDu
 
 
 class TestIDu(unittest.TestCase):
@@ -52,7 +52,7 @@ class TestIDu(unittest.TestCase):
     @patch('idu.IDu.__str__', return_value='')
     @patch('idu.IDu.update')
     @patch('idu.input', return_value='P')
-    def test_P_refreshes_and_prints(self, m_input, m_update, m_idu_str):
+    def test_capital_p_refreshes_and_prints(self, m_input, m_update, m_idu_str):
         self.idu.prompt()
         m_input.assert_called()
         m_update.assert_called()
@@ -88,6 +88,59 @@ class TestIDu(unittest.TestCase):
         idu = IDu(directory=join(self.td.name, 'foo'))
         with self.assertRaises(RuntimeError):
             idu.loop()
+
+
+class TestRunDu(unittest.TestCase):
+    def setUp(self):
+        self.td = TemporaryDirectory()
+        self.addCleanup(self.td.cleanup)
+
+    def mkfile(self, path, nbytes):
+        with open(join(self.td.name, path), 'w') as f:
+            f.write('x' * nbytes)
+
+    def mkdir(self, path):
+        (Path(self.td.name) / path).mkdir(parents=True, exist_ok=True)
+
+    def test_run_du_empty_directory(self):
+        results, stderr = run_du(self.td.name)
+        self.assertEqual('', stderr)
+        self.assertListEqual([DirectoryDu(self.td.name, 0)], results)
+
+    def test_run_du_nonexistent_directory(self):
+        results, stderr = run_du(join(self.td.name, 'nonexistent'))
+        self.assertIn('No such file or directory', stderr)
+        self.assertListEqual([], results)
+
+    @unittest.expectedFailure  # issue #2
+    def test_run_du_directory_with_files(self):
+        nbytes = 1_000
+        self.mkfile('foo.txt', nbytes)
+        results, stderr = run_du(self.td.name)
+        self.assertEqual('', stderr)
+        self.assertSetEqual({DirectoryDu(self.td.name, nbytes)}, set(results))
+
+    def test_run_du_directory_with_subdirectory(self):
+        self.mkdir('foo/')
+        results, stderr = run_du(self.td.name)
+        self.assertEqual('', stderr)
+        self.assertSetEqual({
+            DirectoryDu(self.td.name, 0),
+            DirectoryDu(join(self.td.name, 'foo/'), 0),
+        }, set(results))
+
+    def test_run_du_directory_with_subdirectories(self):
+        self.mkdir('foo/')
+        self.mkdir('foo/boo')
+        self.mkdir('bar')
+        results, stderr = run_du(self.td.name)
+        self.assertEqual('', stderr)
+        self.assertSetEqual({
+            DirectoryDu(self.td.name, 0),
+            DirectoryDu(join(self.td.name, 'foo/'), 0),
+            DirectoryDu(join(self.td.name, 'foo/boo/'), 0),
+            DirectoryDu(join(self.td.name, 'bar/'), 0),
+        }, set(results))
 
 
 if __name__ == '__main__':
