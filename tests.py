@@ -28,6 +28,18 @@ class TestIDu(unittest.TestCase):
             m_input.assert_called()
             self.assertEqual(0, cm.exception.code)
 
+    @patch('idu.IDu.prompt', side_effect=KeyboardInterrupt)
+    @patch('idu.run_du', return_value=([], ''))
+    def test_ctrl_c_quits(self, m_run_du, m_prompt):
+        self.idu.loop()
+        m_prompt.assert_called_once()
+
+    @patch('idu.IDu.prompt', side_effect=EOFError)
+    @patch('idu.run_du', return_value=([], ''))
+    def test_ctrl_d_quits(self, m_run_du, m_prompt):
+        self.idu.loop()
+        m_prompt.assert_called_once()
+
     @patch('idu.IDu.__str__', return_value='')
     @patch('idu.IDu.update')
     @patch('idu.input', return_value='p')
