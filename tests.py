@@ -8,7 +8,7 @@ from unittest.mock import patch
 from idu import IDu, HELP, run_du, DirectoryDu
 
 sysname = uname().sysname
-
+SUPPORTED = {'Linux', 'Darwin'}
 
 class TestIDu(unittest.TestCase):
     def setUp(self):
@@ -93,6 +93,11 @@ class TestIDu(unittest.TestCase):
             idu.loop()
 
 
+@unittest.skipIf(
+    sysname not in SUPPORTED,
+    'Skipping unit tests for run_du as this is neither a Linux nor a '
+    'Darwin system.'
+)
 class TestRunDu(unittest.TestCase):
     def setUp(self):
         self.td = TemporaryDirectory()
