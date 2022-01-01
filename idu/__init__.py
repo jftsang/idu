@@ -13,7 +13,7 @@ P - refresh
 u or .. - go up to parent directory
 c - show directories relative to this one
 g /foo - go to a new directory
-r - switch between relative or absolute paths 
+r - switch between relative or absolute paths
 s - switch between sorting by name or by size
 q - quit
 """
@@ -152,13 +152,15 @@ class IDu:
         def fmt(n, r):
             percentage = r.size / my_size * 100
             if self.rel:
-                return f'{n:<9d}{r.size:>10d}  ({percentage:>6.2f}%)\t{relpath(r.path, self.base_directory)}'
+                rel = relpath(r.path, self.base_directory)
+                return f'{n:<9d}{r.size:>10d}  ({percentage:>6.2f}%)\t{rel}'
             else:
                 return f'{n:<9d}{r.size:>10d}  ({percentage:>6.2f}%)\t{r.path}'
 
         output += '\n'.join([fmt(n, r) for n, r in enumerate(here)])
         output += '\n'
-        output += f'of which {my_size - children_size:>10d}\tis from files in {self.directory}'
+        residue = my_size - children_size
+        output += f'of which {residue:>10d}\tis from files in {self.directory}'
 
         return output
 
@@ -167,7 +169,9 @@ class IDu:
 
 def run_du(directory: Union[str, Path]) -> (List[DirectoryDu], str):
     directory = str(directory)
-    du_res = subprocess.run(['du', '-k', directory], capture_output=True, text=True)
+    du_res = subprocess.run(
+        ['du', '-k', directory], capture_output=True, text=True
+    )
     out = du_res.stdout.split('\n')[:-1]
     out_2 = [o.split('\t') for o in out]
     return (

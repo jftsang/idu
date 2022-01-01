@@ -10,6 +10,7 @@ from idu import IDu, HELP, run_du, DirectoryDu
 sysname = uname().sysname
 SUPPORTED = {'Linux', 'Darwin'}
 
+
 class TestIDu(unittest.TestCase):
     def setUp(self):
         self.td = TemporaryDirectory()
@@ -55,7 +56,9 @@ class TestIDu(unittest.TestCase):
     @patch('idu.IDu.__str__', return_value='')
     @patch('idu.IDu.update')
     @patch('idu.input', return_value='P')
-    def test_capital_p_refreshes_and_prints(self, m_input, m_update, m_idu_str):
+    def test_capital_p_refreshes_and_prints(
+            self, m_input, m_update, m_idu_str
+    ):
         self.idu.prompt()
         m_input.assert_called()
         m_update.assert_called()
