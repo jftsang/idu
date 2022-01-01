@@ -1,10 +1,13 @@
 import unittest
+from os import uname
 from os.path import join
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 from idu import IDu, HELP, run_du, DirectoryDu
+
+sysname = uname().sysname
 
 
 class TestIDu(unittest.TestCase):
@@ -105,7 +108,14 @@ class TestRunDu(unittest.TestCase):
     def test_run_du_empty_directory(self):
         results, stderr = run_du(self.td.name)
         self.assertEqual('', stderr)
-        self.assertListEqual([DirectoryDu(self.td.name, 0)], results)
+        if sysname == 'Linux':
+            expected = [DirectoryDu(self.td.name, 4)]
+        elif sysname == 'Darwin':
+            expected = [DirectoryDu(self.td.name, 0)]
+        else:
+            raise NotImplementedError
+
+        self.assertListEqual(expected, results)
 
     def test_run_du_nonexistent_directory(self):
         results, stderr = run_du(join(self.td.name, 'nonexistent'))
@@ -124,10 +134,19 @@ class TestRunDu(unittest.TestCase):
         self.mkdir('foo/')
         results, stderr = run_du(self.td.name)
         self.assertEqual('', stderr)
-        self.assertSetEqual({
-            DirectoryDu(self.td.name, 0),
-            DirectoryDu(join(self.td.name, 'foo/'), 0),
-        }, set(results))
+        if sysname == 'Linux':
+            expected = {
+                DirectoryDu(self.td.name, 8),
+                DirectoryDu(join(self.td.name, 'foo/'), 4),
+            }
+        elif sysname == 'Darwin':
+            expected = {
+                DirectoryDu(self.td.name, 0),
+                DirectoryDu(join(self.td.name, 'foo/'), 0),
+            }
+        else:
+            raise NotImplementedError
+        self.assertSetEqual(expected, set(results))
 
     def test_run_du_directory_with_subdirectories(self):
         self.mkdir('foo/')
@@ -135,12 +154,23 @@ class TestRunDu(unittest.TestCase):
         self.mkdir('bar')
         results, stderr = run_du(self.td.name)
         self.assertEqual('', stderr)
-        self.assertSetEqual({
-            DirectoryDu(self.td.name, 0),
-            DirectoryDu(join(self.td.name, 'foo/'), 0),
-            DirectoryDu(join(self.td.name, 'foo/boo/'), 0),
-            DirectoryDu(join(self.td.name, 'bar/'), 0),
-        }, set(results))
+        if sysname == 'Linux':
+            expected = {
+                DirectoryDu(self.td.name, 16),
+                DirectoryDu(join(self.td.name, 'foo/'), 8),
+                DirectoryDu(join(self.td.name, 'foo/boo/'), 4),
+                DirectoryDu(join(self.td.name, 'bar/'), 4),
+            }
+        elif sysname == 'Darwin':
+            expected = {
+                DirectoryDu(self.td.name, 0),
+                DirectoryDu(join(self.td.name, 'foo/'), 0),
+                DirectoryDu(join(self.td.name, 'foo/boo/'), 0),
+                DirectoryDu(join(self.td.name, 'bar/'), 0),
+            }
+        else:
+            raise NotImplementedError
+        self.assertSetEqual(expected, set(results))
 
 
 if __name__ == '__main__':
