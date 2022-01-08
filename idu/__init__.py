@@ -15,6 +15,7 @@ c - show directories relative to this one
 g /foo - go to a new directory
 r - switch between relative or absolute paths
 s - switch between sorting by name or by size
+o - open this directory (MacOS only)
 q - quit
 """
 
@@ -128,6 +129,11 @@ class IDu:
                 self.sort_by_size = not self.sort_by_size
                 self.resort()
                 print(self)
+            elif ans == 'o':
+                try:
+                    subprocess.run(['open', self.directory])
+                except FileNotFoundError:
+                    print('\'open\' command not found.')
             else:
                 print('?')
 
