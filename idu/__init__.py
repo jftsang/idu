@@ -25,13 +25,13 @@ OUPs = Optional[Union[Path, str]]
 
 def humanize(size: int) -> str:
     if size > 1024 ** 3:
-        return f'{size / 1024 ** 3:>9.1f}G'
+        return f'{size / 1024 ** 3:>9.1f}T'
     elif size > 1024 ** 2:
-        return f'{size / 1024 ** 2:>9.1f}M'
+        return f'{size / 1024 ** 2:>9.1f}G'
     elif size > 1024:
-        return f'{size / 1024:>9.1f}K'
+        return f'{size / 1024:>9.1f}M'
     else:
-        return f'{size:>8d} '
+        return f'{size:>8d}K'
 
 
 class DirectoryDu:
