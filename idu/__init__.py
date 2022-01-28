@@ -15,11 +15,23 @@ c - show directories relative to this one
 g /foo - go to a new directory
 r - switch between relative or absolute paths
 s - switch between sorting by name or by size
+h - human-readable numbers
 o - open this directory (MacOS only)
 q - quit
 """
 
 OUPs = Optional[Union[Path, str]]
+
+
+def humanize(size: int) -> str:
+    if size > 1024 ** 3:
+        return f'{size / 1024 ** 3:>9.1f}G'
+    elif size > 1024 ** 2:
+        return f'{size / 1024 ** 2:>9.1f}M'
+    elif size > 1024:
+        return f'{size / 1024:>9.1f}K'
+    else:
+        return f'{size:>8d} '
 
 
 class DirectoryDu:
@@ -60,7 +72,8 @@ class IDu:
         else:
             self.base_directory = Path.cwd()
         self.results = []
-        self.sort_by_size = False
+        self.sort_by_size = True
+        self.human = True
         self.rel = True
 
     def update(
@@ -129,6 +142,9 @@ class IDu:
                 self.sort_by_size = not self.sort_by_size
                 self.resort()
                 print(self)
+            elif ans == 'h':
+                self.human = not self.human
+                print(self)
             elif ans == 'o':
                 try:
                     subprocess.run(['open', self.directory])
@@ -157,16 +173,30 @@ class IDu:
 
         def fmt(n, r):
             percentage = r.size / my_size * 100
+            string = ''
+            string += f'{n:<9d}'
+            if self.human:
+                string += f'{humanize(r.size):>10s}'
+            else:
+                string += f'{r.size:>10d}'
+
+            string += f'  ({percentage:>6.2f}%)\t'
+
             if self.rel:
                 rel = relpath(r.path, self.base_directory)
-                return f'{n:<9d}{r.size:>10d}  ({percentage:>6.2f}%)\t{rel}'
+                string += f'{rel}'
             else:
-                return f'{n:<9d}{r.size:>10d}  ({percentage:>6.2f}%)\t{r.path}'
+                string += f'{r.path}'
+
+            return string
 
         output += '\n'.join([fmt(n, r) for n, r in enumerate(here)])
         output += '\n'
         residue = my_size - children_size
-        output += f'of which {residue:>10d}\tis from files in {self.directory}'
+        if humanize:
+            output += f'of which {humanize(residue)}\tis from files in {self.directory}'
+        else:
+            output += f'of which {residue:>10d}\tis from files in {self.directory}'
 
         return output
 
